@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
     marginTop: 5,
     borderStyle: "solid",
     borderRadius: 5,
-    borderWidth: 1,
+    borderWidth: 0,
     marginBottom: 10,
     width: Dimensions.get('screen').width - 20,
     height: "30%",

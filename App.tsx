@@ -2,16 +2,18 @@ import { StatusBar } from 'expo-status-bar';
 import { Provider } from 'react-redux';
 import React from 'react';
 import { BirdComp } from './components/bird';
+import { Feather } from '@expo/vector-icons';
 import DeviceReader from './components/ble'
 import {Store} from './reducers/reducers'
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, Image } from 'react-native';
 
 export default function App() {
   return (
     <Provider store={Store}>
       <View style={styles.container}>
         <View style={styles.appHeader}>
-          <Text style={styles.headerText}>Bird House</Text>
+          <Image  style={styles.img} source={require("./assets/imgs/birdhouse.png")}/>
+          <Feather name="bluetooth" size={24} color="black" />
         </View>
         <View style={styles.birdsContainer}>
           <BirdComp />
@@ -36,10 +38,18 @@ const styles = StyleSheet.create({
   appHeader: {
     alignItems: "center",
     height: "10%",
-    marginTop: 50,
+    marginTop: 30,
+    marginLeft: 15,
+    marginRight: 15,
+    justifyContent: 'space-between',
+    flexDirection: 'row',
   },
   headerText: {
     fontFamily: "Times New Roman",
     fontSize: 20,
+  },
+  img: {
+    height: "60%",
+    width: "10%"
   }
 });

@@ -2,6 +2,7 @@ import { actions } from '../actions/actions'
 import { createStore, combineReducers} from 'redux'
 import {birdList, baseState, baseListState} from '../types/birdType'
 import uuid from 'react-native-uuid';
+import { baseModal } from '../types/modal';
 
 
 // HandleTime is a string formatter for time
@@ -113,10 +114,22 @@ function refreshReducer(state = baseListState, action: any) {
   }
 }
 
+function modalReducer(state = baseModal, action: any) {
+  switch (action.type) {
+    case actions.ToggleModal:
+      var copyModal = Object.assign({}, baseModal)
+      return {
+        ...state,
+        show: !copyModal.show
+      }
+  }
+}
+
  
 const rootReducer = combineReducers({
     birdsReducer,
     refreshReducer,
+    modalReducer,
 });
 
 export type RootState = ReturnType<typeof rootReducer>
