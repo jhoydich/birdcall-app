@@ -1,6 +1,6 @@
 import React from 'react';
 import { Component } from 'react';
-import { Platform, View, Text, Modal, StyleSheet, Button, FlatList } from 'react-native';
+import { Platform, View, Text, Modal, StyleSheet, Button, FlatList, TouchableOpacity, ActivityIndicatorBase, ActionSheetIOS } from 'react-native';
 import { BleManager, Device } from 'react-native-ble-plx';
 import { connect } from 'react-redux';
 import { actions } from '../actions/actions';
@@ -8,8 +8,7 @@ import { birdList, CharValue } from '../types/birdType';
 import { PermissionsAndroid } from 'react-native';
 import {Buffer} from 'buffer';
 import { modalType } from '../types/modal';
-import { RootState } from '../reducers/reducers';
-import { TouchableOpacity } from 'react-native-gesture-handler';
+import { RootState } from '../reducers/reducers';;
 
 
 
@@ -51,6 +50,13 @@ export function toggleModal(bool: boolean) {
     return {
         type: actions.ToggleModal,
         payload: !bool
+    }
+}
+
+function sendCnxStatus(bool: boolean) {
+    return {
+        type: actions.Connected,
+        payload: bool
     }
 }
 
@@ -105,6 +111,7 @@ class DeviceReader extends Component<bleAbstractions> {
 
 
     connectToDevice(device: Device) {
+        console.log("Connecting to device")
         device.connect()
         .then((device) => {
             console.log("Connected to device")
@@ -115,9 +122,12 @@ class DeviceReader extends Component<bleAbstractions> {
             return this.setupNotifications(device)
         })
         .then(() => {
-            
         }, (error) => {
             console.log(error)
+        })
+
+        device.onDisconnected(() => {
+            this.props.dispatch(sendCnxStatus(false))
         })
     }
 
@@ -164,6 +174,8 @@ class DeviceReader extends Component<bleAbstractions> {
                 for (const [key, value] of (await services).entries()) {
                     if (value.uuid == bird.serviceUUID) {
                         console.log("subscribed")
+                        this.props.dispatch(toggleModal(this.props.show))
+                        this.props.dispatch(sendCnxStatus(true))
                         device.monitorCharacteristicForService(bird.serviceUUID, bird.charUUID, (error, characteristic) => {
                             if (error) {
                                 console.log(error.message)
@@ -198,6 +210,7 @@ class DeviceReader extends Component<bleAbstractions> {
                  animationType="slide"
                  transparent={true}
                  visible={this.props.show}
+                 
                  onShow={() => this.scanAndConnect()}
              >
                  <View style={styles.modalStyle}>
@@ -225,7 +238,9 @@ class DeviceReader extends Component<bleAbstractions> {
             transparent={true}
             visible={this.props.show}
             onShow={() => this.scanAndConnect()}
+            
         >
+            
             <View style={styles.modalStyle}>
             
                 <FlatList
@@ -237,12 +252,11 @@ class DeviceReader extends Component<bleAbstractions> {
                     // <Image style={styles.img} source={item.img}/>
                     // displaying the list of birds & when they were heard
                     renderItem={({item}) => (
-                            
-                            <View>
-                                <TouchableOpacity onPress={() => this.connectToDevice(item)}>
+                            <TouchableOpacity style={styles.modalItem} onPress={() => this.connectToDevice(item)}>
+                                <View>
                                     <Text>{item.name}</Text> 
-                                </TouchableOpacity>  
-                            </View> 
+                                </View>
+                            </TouchableOpacity> 
                              
                             
                     )}
@@ -282,7 +296,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "white",
+        backgroundColor: "#F1F1F1",
         marginVertical: "40%",
         marginHorizontal: "15%",
         borderRadius: 5,
@@ -295,5 +309,13 @@ const styles = StyleSheet.create({
     },
     closeButton: {
         marginBottom: 10,
+    },
+    modalItem: {
+        borderStyle: "solid",
+        borderWidth: 1,
+        width: "80%",
+        borderRadius: 5,
+        backgroundColor: "cyan",
+        marginTop: 5,
     }
   });

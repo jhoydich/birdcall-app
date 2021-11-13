@@ -11,14 +11,17 @@ import { TouchableHighlight, TouchableOpacity } from 'react-native-gesture-handl
 
 export function HeaderComp() {
     let {show} = useSelector((state: RootState) => state.modalReducer)
+    let {connected} = useSelector((state: RootState) => state.modalReducer)
     const dispatch = useDispatch()
+
+    let color = connected? "blue": "black"
 
     return (
         <View style={styles.appHeader}>
         
           <Image  style={styles.img} source={require("./../assets/imgs/birdhouse.png")}/>
           <TouchableOpacity onPress={() => dispatch(toggleModal(show))}> 
-            <Feather name="bluetooth" size={24} color="black" />
+            <Feather name="bluetooth" size={24} color={color} />
           </TouchableOpacity>   
         </View>
     )

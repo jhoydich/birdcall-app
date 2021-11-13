@@ -14,7 +14,7 @@ function HandleTime(mins: number) :string {
     
     return ""
   }
-
+  
   if (mins == 0) {
     return "Just now"
   } else if (mins == 255) {
@@ -25,7 +25,7 @@ function HandleTime(mins: number) :string {
   let str = ""
 
   // handling hours and mins
-  let hrs = mins % 60
+  let hrs = Math.floor(mins /60)
   mins = mins - hrs * 60
   
   // over an hour ago?
@@ -79,6 +79,7 @@ function birdsReducer(state = baseState, action: any) {
            
             let birdCopy = Object.assign({}, bird)
             birdCopy.lastHeard = HandleTime(action.payload.value)
+            console.log(birdCopy.lastHeard)
             birdCopy.id = uuid.v4().toString()
             bList[idx] = birdCopy
           } 
@@ -120,6 +121,13 @@ function modalReducer(state = baseModal, action: any) {
   switch (action.type) {
     // opening and closing the modal
     case actions.ToggleModal:
+      if (state.toggle) {
+        return {
+          ...state,
+          show: action.payload,
+          devices: [],
+        }
+      }
       return {
         ...state,
         show: action.payload
@@ -128,9 +136,12 @@ function modalReducer(state = baseModal, action: any) {
     // add ble device to list
     case actions.AddDevice:
 
-      if (isNaN(action.payload)) {
+      if (action.payload.name == null) {
+        
         return state
       }
+
+      
       let curState = Object.assign({}, state)
       let curList =[...curState.devices]
       var tog = curState.toggle
@@ -138,6 +149,7 @@ function modalReducer(state = baseModal, action: any) {
 
       // if it is already there we don't need to add it
       if (curList.some(e => e.id === action.payload.id)) {
+        
         return state
       }
 
@@ -150,6 +162,14 @@ function modalReducer(state = baseModal, action: any) {
         devices: curList,
         toggle: !tog
       }
+    
+
+    case actions.Connected:
+      return {
+        ...state,
+        connected: action.payload
+      } 
+      
     default:
       return state
   }
