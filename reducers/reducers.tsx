@@ -114,14 +114,44 @@ function refreshReducer(state = baseListState, action: any) {
   }
 }
 
+// reducer for ble modal
 function modalReducer(state = baseModal, action: any) {
+  
   switch (action.type) {
+    // opening and closing the modal
     case actions.ToggleModal:
-      var copyModal = Object.assign({}, baseModal)
       return {
         ...state,
-        show: !copyModal.show
+        show: action.payload
       }
+
+    // add ble device to list
+    case actions.AddDevice:
+
+      if (isNaN(action.payload)) {
+        return state
+      }
+      let curState = Object.assign({}, state)
+      let curList =[...curState.devices]
+      var tog = curState.toggle
+
+
+      // if it is already there we don't need to add it
+      if (curList.some(e => e.id === action.payload.id)) {
+        return state
+      }
+
+      console.log("Adding device")
+      curList.push(action.payload)
+
+      console.log(curList.forEach((device) => {device.name} ))
+      return {
+        ...state,
+        devices: curList,
+        toggle: !tog
+      }
+    default:
+      return state
   }
 }
 

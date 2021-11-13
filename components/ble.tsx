@@ -1,17 +1,20 @@
 import React from 'react';
 import { Component } from 'react';
-import { Platform, View, Text } from 'react-native';
+import { Platform, View, Text, Modal, StyleSheet, Button, FlatList } from 'react-native';
 import { BleManager, Device } from 'react-native-ble-plx';
 import { connect } from 'react-redux';
 import { actions } from '../actions/actions';
 import { birdList, CharValue } from '../types/birdType';
 import { PermissionsAndroid } from 'react-native';
 import {Buffer} from 'buffer';
+import { modalType } from '../types/modal';
+import { RootState } from '../reducers/reducers';
+import { TouchableOpacity } from 'react-native-gesture-handler';
 
 
 
 
-export async function requestLocationPermission() {
+async function requestLocationPermission() {
     try {
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION, {
@@ -39,7 +42,18 @@ export async function requestLocationPermission() {
 interface bleAbstractions  {
     manager?: BleManager;
     dispatch: Function;
+    show: boolean;
+    devices: Array<Device>;
+    toggle: boolean;
 }
+
+export function toggleModal(bool: boolean) {
+    return {
+        type: actions.ToggleModal,
+        payload: !bool
+    }
+}
+
 
 function dispatchBird(charUUID: string, val: number) {
 
@@ -61,6 +75,14 @@ function refreshList() {
     }
 }
 
+function addDevice(dev: Device) {
+
+    return {
+        type: actions.AddDevice,
+        payload: dev,
+    }
+}
+
 class DeviceReader extends Component<bleAbstractions> {
     manager: BleManager
     constructor(props: any) {
@@ -74,11 +96,29 @@ class DeviceReader extends Component<bleAbstractions> {
         console.log("Started BLE")
         if (Platform.OS === 'ios') {
             this.manager.onStateChange((state) => {
-                if (state === 'PoweredOn') this.scanAndConnect()
+                if (state === 'PoweredOn') return
             })
         } else {
-            this.scanAndConnect()
+            return
         }
+    }
+
+
+    connectToDevice(device: Device) {
+        device.connect()
+        .then((device) => {
+            console.log("Connected to device")
+            return device.discoverAllServicesAndCharacteristics()
+        })
+        .then((device) => {
+            console.log("Subscribing")
+            return this.setupNotifications(device)
+        })
+        .then(() => {
+            
+        }, (error) => {
+            console.log(error)
+        })
     }
 
     // scanning for devices and connecting to the one we want
@@ -102,26 +142,8 @@ class DeviceReader extends Component<bleAbstractions> {
 
                     if (device !== null) {
                         
-
+                        this.props.dispatch(addDevice(device))
                     
-                        if (device.name === "Bird Monitor") {
-                            console.log("Found device")
-                            this.manager.stopDeviceScan()
-                            device.connect()
-                            .then((device) => {
-                                console.log("Connected to device")
-                                return device.discoverAllServicesAndCharacteristics()
-                            })
-                            .then((device) => {
-                                console.log("Subscribing")
-                                return this.setupNotifications(device)
-                            })
-                            .then(() => {
-                                
-                            }, (error) => {
-                                console.log(error)
-                            })
-                        }
                     }
                     return
                 });
@@ -166,16 +188,112 @@ class DeviceReader extends Component<bleAbstractions> {
         }
         )
     }
+    
+
     render() {
+        
+        if (this.props.devices.length == 0) {
+            return(
+                <Modal
+                 animationType="slide"
+                 transparent={true}
+                 visible={this.props.show}
+                 onShow={() => this.scanAndConnect()}
+             >
+                 <View style={styles.modalStyle}>
+                 
+                     <Text style={styles.flatListCenter}>
+                         No devices to connect to...
+                     </Text>
+     
+                     <View style={styles.closeButton}>
+                         <Button
+                             onPress={() => this.props.dispatch(toggleModal(this.props.show))}
+                             title="Close"
+                             color="grey"
+                             accessibilityLabel="Close modal button"
+                         />
+                     </View>
+                 </View>
+                </Modal>
+             )
+
+        }
         return(
-            <View>
-                
-               
+           <Modal
+            animationType="slide"
+            transparent={true}
+            visible={this.props.show}
+            onShow={() => this.scanAndConnect()}
+        >
+            <View style={styles.modalStyle}>
             
+                <FlatList
+                    data={this.props.devices}
+                    
+                    contentContainerStyle={styles.flatListCenter}
+                    keyExtractor={item => item.id}
+                    extraData={this.props.toggle}
+                    // <Image style={styles.img} source={item.img}/>
+                    // displaying the list of birds & when they were heard
+                    renderItem={({item}) => (
+                            
+                            <View>
+                                <TouchableOpacity onPress={() => this.connectToDevice(item)}>
+                                    <Text>{item.name}</Text> 
+                                </TouchableOpacity>  
+                            </View> 
+                             
+                            
+                    )}
+                    showsVerticalScrollIndicator={false}
+                />
+
+                <View style={styles.closeButton}>
+                    <Button
+                        onPress={() => this.props.dispatch(toggleModal(this.props.show))}
+                        title="Close"
+                        color="grey"
+                        accessibilityLabel="Close modal button"
+                    />
+                </View>
             </View>
+           </Modal>
         )
     }
 
 }
 
-export default connect()(DeviceReader)
+const mapStatetoProps = (store: RootState) => {
+    return {
+        show: store.modalReducer.show,
+        devices: store.modalReducer.devices,
+        toggle: store.modalReducer.toggle
+    }
+}
+
+export default connect(mapStatetoProps)(DeviceReader)
+
+
+// add view around button to add margin
+const styles = StyleSheet.create({
+    
+    modalStyle: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "white",
+        marginVertical: "40%",
+        marginHorizontal: "15%",
+        borderRadius: 5,
+    },
+    flatListCenter: {
+        textAlign:"center",
+        alignItems: "center",
+        width: "90%",
+        height: "50%",
+    },
+    closeButton: {
+        marginBottom: 10,
+    }
+  });

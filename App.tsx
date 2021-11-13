@@ -1,20 +1,19 @@
 import { StatusBar } from 'expo-status-bar';
-import { Provider } from 'react-redux';
+import { Provider, useSelector } from 'react-redux';
 import React from 'react';
 import { BirdComp } from './components/bird';
-import { Feather } from '@expo/vector-icons';
-import DeviceReader from './components/ble'
+import DeviceReader, { toggleModal } from './components/ble'
 import {Store} from './reducers/reducers'
 import { StyleSheet, Text, View, Image } from 'react-native';
+import { HeaderComp } from './components/header';
 
 export default function App() {
+  
+
   return (
     <Provider store={Store}>
       <View style={styles.container}>
-        <View style={styles.appHeader}>
-          <Image  style={styles.img} source={require("./assets/imgs/birdhouse.png")}/>
-          <Feather name="bluetooth" size={24} color="black" />
-        </View>
+        <HeaderComp />
         <View style={styles.birdsContainer}>
           <BirdComp />
         </View>
