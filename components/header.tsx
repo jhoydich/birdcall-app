@@ -4,7 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { toggleModal } from './ble';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../reducers/reducers';
-import { TouchableHighlight, TouchableOpacity } from 'react-native-gesture-handler';
+import { TouchableOpacity } from 'react-native-gesture-handler';
 
 
 

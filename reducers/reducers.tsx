@@ -79,7 +79,7 @@ function birdsReducer(state = baseState, action: any) {
            
             let birdCopy = Object.assign({}, bird)
             birdCopy.lastHeard = HandleTime(action.payload.value)
-            console.log(birdCopy.lastHeard)
+            
             birdCopy.id = uuid.v4().toString()
             bList[idx] = birdCopy
           } 
@@ -153,7 +153,7 @@ function modalReducer(state = baseModal, action: any) {
         return state
       }
 
-      console.log("Adding device")
+      
       curList.push(action.payload)
 
       console.log(curList.forEach((device) => {device.name} ))

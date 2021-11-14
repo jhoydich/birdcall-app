@@ -1,6 +1,6 @@
 import React from 'react';
 import { Component } from 'react';
-import { Platform, View, Text, Modal, StyleSheet, Button, FlatList, TouchableOpacity, ActivityIndicatorBase, ActionSheetIOS } from 'react-native';
+import { Platform, View, Text, Modal, StyleSheet, Button, FlatList, TouchableOpacity, ActivityIndicatorBase, ActionSheetIOS, useWindowDimensions } from 'react-native';
 import { BleManager, Device } from 'react-native-ble-plx';
 import { connect } from 'react-redux';
 import { actions } from '../actions/actions';
@@ -44,6 +44,7 @@ interface bleAbstractions  {
     show: boolean;
     devices: Array<Device>;
     toggle: boolean;
+    connected: boolean;
 }
 
 export function toggleModal(bool: boolean) {
@@ -176,6 +177,19 @@ class DeviceReader extends Component<bleAbstractions> {
                         console.log("subscribed")
                         this.props.dispatch(toggleModal(this.props.show))
                         this.props.dispatch(sendCnxStatus(true))
+
+                        // getting initial value
+                        var initCharValue = device.readCharacteristicForService(bird.serviceUUID, bird.charUUID)
+                        var val = (await initCharValue).value?.toString()
+                        if (val != undefined) {
+                                
+                            let decodedVal = Buffer.from(val, 'base64').toString('hex')
+                            let mins = Number("0x" + decodedVal)
+                            this.props.dispatch(dispatchBird(bird.charUUID, mins))
+                            this.props.dispatch(refreshList())
+                        }
+
+                        // setting up subscription
                         device.monitorCharacteristicForService(bird.serviceUUID, bird.charUUID, (error, characteristic) => {
                             if (error) {
                                 console.log(error.message)
@@ -207,33 +221,33 @@ class DeviceReader extends Component<bleAbstractions> {
         if (this.props.devices.length == 0) {
             return(
                 <Modal
-                 animationType="slide"
-                 transparent={true}
-                 visible={this.props.show}
-                 
-                 onShow={() => this.scanAndConnect()}
-             >
-                 <View style={styles.modalStyle}>
-                 
-                     <Text style={styles.flatListCenter}>
-                         No devices to connect to...
-                     </Text>
-     
-                     <View style={styles.closeButton}>
-                         <Button
-                             onPress={() => this.props.dispatch(toggleModal(this.props.show))}
-                             title="Close"
-                             color="grey"
-                             accessibilityLabel="Close modal button"
-                         />
-                     </View>
-                 </View>
+                animationType="slide"
+                transparent={true}
+                visible={this.props.show}
+                
+                onShow={() => this.scanAndConnect()}
+                >
+                    <View style={styles.modalStyle}>
+                    
+                        <Text style={styles.noDevText}>
+                            No devices to connect to...
+                        </Text>
+        
+                        <View style={styles.closeButton}>
+                            <Button
+                                onPress={() => this.props.dispatch(toggleModal(this.props.show))}
+                                title="Close"
+                                color="grey"
+                                accessibilityLabel="Close modal button"
+                            />
+                        </View>
+                    </View>
                 </Modal>
-             )
+            )
 
         }
         return(
-           <Modal
+        <Modal
             animationType="slide"
             transparent={true}
             visible={this.props.show}
@@ -242,27 +256,29 @@ class DeviceReader extends Component<bleAbstractions> {
         >
             
             <View style={styles.modalStyle}>
-            
+                <Text style={styles.noDevText}>Available Devices</Text>
+                
                 <FlatList
                     data={this.props.devices}
-                    
+                    //style= {styles.flatListCenter}
                     contentContainerStyle={styles.flatListCenter}
                     keyExtractor={item => item.id}
                     extraData={this.props.toggle}
                     // <Image style={styles.img} source={item.img}/>
                     // displaying the list of birds & when they were heard
                     renderItem={({item}) => (
-                            <TouchableOpacity style={styles.modalItem} onPress={() => this.connectToDevice(item)}>
-                                <View>
-                                    <Text>{item.name}</Text> 
+                            <TouchableOpacity  onPress={() => this.connectToDevice(item)}>
+                                <View style={styles.modalItem}>
+                                    <Text style={styles.text}>{item.name}</Text> 
                                 </View>
+                            
                             </TouchableOpacity> 
-                             
+                            
                             
                     )}
                     showsVerticalScrollIndicator={false}
                 />
-
+            
                 <View style={styles.closeButton}>
                     <Button
                         onPress={() => this.props.dispatch(toggleModal(this.props.show))}
@@ -272,8 +288,9 @@ class DeviceReader extends Component<bleAbstractions> {
                     />
                 </View>
             </View>
-           </Modal>
+        </Modal>
         )
+        
     }
 
 }
@@ -282,7 +299,8 @@ const mapStatetoProps = (store: RootState) => {
     return {
         show: store.modalReducer.show,
         devices: store.modalReducer.devices,
-        toggle: store.modalReducer.toggle
+        toggle: store.modalReducer.toggle,
+        connected: store.modalReducer.connected,
     }
 }
 
@@ -297,25 +315,33 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
         backgroundColor: "#F1F1F1",
-        marginVertical: "40%",
+        marginVertical: "60%",
         marginHorizontal: "15%",
         borderRadius: 5,
     },
     flatListCenter: {
+        
         textAlign:"center",
         alignItems: "center",
-        width: "90%",
+        marginHorizontal: "0%",
         height: "50%",
+    },
+    noDevText: {
+        fontSize: 16,
     },
     closeButton: {
         marginBottom: 10,
     },
     modalItem: {
-        borderStyle: "solid",
-        borderWidth: 1,
-        width: "80%",
+        textAlign: "center",
+        width: 200,
         borderRadius: 5,
-        backgroundColor: "cyan",
+        backgroundColor: "white",
         marginTop: 5,
+    },
+    text: {
+        textAlign: "center",
+        marginHorizontal: 0,
     }
+   
   });
